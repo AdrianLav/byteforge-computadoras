@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ByteForge | Modelo de datos y matriz CRUD</title>
+  <style>
+    :root {
+      --base: #12141a;
+      --surface: #1b1e27;
+      --surface-high: #232735;
+      --border: #34394a;
+      --text: #edeef2;
+      --muted: #a4a9b7;
+      --copper: #e8a33d;
+      --blue: #79a4ff;
+      --green: #67c28e;
+      --red: #ef8175;
+    }
+
+    @page { size: Letter; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--base);
+      color: var(--text);
+      font: 10pt/1.48 Arial, Helvetica, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .page {
+      width: 8.5in;
+      height: 11in;
+      padding: .52in .58in .48in;
+      position: relative;
+      overflow: hidden;
+      background: var(--base);
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: auto; }
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      color: var(--muted);
+      font: 8pt "Courier New", monospace;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .brand { color: var(--text); font: bold 13pt Arial, sans-serif; letter-spacing: -.04em; }
+    .brand b { color: var(--copper); }
+    .eyebrow {
+      margin: 20px 0 7px;
+      color: var(--copper);
+      font: bold 8pt "Courier New", monospace;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 10px; font-size: 30pt; line-height: 1.05; letter-spacing: -.055em; }
+    h2 { margin: 0 0 10px; font-size: 18pt; line-height: 1.15; letter-spacing: -.035em; }
+    h3 { margin: 0 0 7px; color: var(--copper); font-size: 11pt; }
+    p { margin-bottom: 9px; color: var(--muted); }
+    strong { color: var(--text); }
+    .accent { color: var(--copper); }
+    .hero {
+      margin: 22px 0 18px;
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--copper);
+      border-radius: 8px;
+      background: linear-gradient(130deg, var(--surface-high), var(--surface) 72%);
+    }
+    .hero p { max-width: 6in; font-size: 11pt; }
+    .stamp {
+      margin-top: 12px;
+      color: var(--blue);
+      font: 8pt "Courier New", monospace;
+      letter-spacing: .03em;
+    }
+    .section-title {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      margin: 17px 0 8px;
+    }
+    .section-title .num { color: var(--copper); font: 9pt "Courier New", monospace; }
+    .section-title h2 { margin: 0; font-size: 15pt; }
+    .model {
+      display: grid;
+      grid-template-columns: 1.05fr 1.2fr 1.05fr;
+      grid-template-rows: auto auto;
+      gap: 10px;
+      align-items: stretch;
+      margin: 10px 0 12px;
+    }
+    .entity {
+      min-height: 88px;
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--surface);
+    }
+    .entity h3 { margin-bottom: 4px; color: var(--copper); font: bold 10pt "Courier New", monospace; }
+    .entity p { margin: 0; font-size: 8.5pt; line-height: 1.4; }
+    .model .order { grid-column: 2; grid-row: 1; border-color: #9c6e30; }
+    .model .product { grid-column: 1; grid-row: 2; }
+    .model .line { grid-column: 2; grid-row: 2; border-color: #4666a7; }
+    .model .payment { grid-column: 3; grid-row: 1; }
+    .model .config { grid-column: 3; grid-row: 2; }
+    .relation {
+      margin-top: 6px;
+      color: var(--blue);
+      font: 7pt "Courier New", monospace;
+    }
+    .note {
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: var(--surface-high);
+      color: var(--muted);
+      font-size: 8.5pt;
+    }
+    .note b { color: var(--copper); }
+    .footer {
+      position: absolute;
+      right: .58in;
+      bottom: .24in;
+      left: .58in;
+      display: flex;
+      justify-content: space-between;
+      padding-top: 7px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font: 7pt "Courier New", monospace;
+    }
+    .entity-table, .crud {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8pt;
+      line-height: 1.37;
+    }
+    th {
+      padding: 7px 8px;
+      background: var(--surface-high);
+      color: var(--copper);
+      font: bold 7.5pt "Courier New", monospace;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+    td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      color: var(--muted);
+    }
+    td:first-child { color: var(--text); font-weight: bold; white-space: nowrap; }
+    code {
+      color: var(--blue);
+      font: 7.5pt "Courier New", monospace;
+      overflow-wrap: anywhere;
+    }
+    .small { font-size: 8pt; }
+    .legend { margin: 8px 0 0; font-size: 7.5pt; }
+    .crud { table-layout: fixed; font-size: 7.5pt; }
+    .crud th, .crud td { padding: 6px 6px; }
+    .crud th:first-child { width: 15%; }
+    .crud th:not(:first-child) { width: 21.25%; }
+    .crud td:first-child { white-space: normal; }
+    .crud .none { color: #777e8f; }
+    .crud .ok { color: var(--green); font-weight: bold; }
+    .crud .limited { color: var(--copper); }
+    .crud .blocked { color: var(--red); }
+    .rule {
+      margin: 12px 0;
+      padding: 14px 15px;
+      border: 1px solid #9c6e30;
+      border-radius: 7px;
+      background: var(--surface);
+    }
+    .rule .label { color: var(--copper); font: bold 8pt "Courier New", monospace; text-transform: uppercase; }
+    .rule p { margin: 6px 0 0; color: var(--text); font-size: 10pt; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card {
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--surface);
+    }
+    .card p, .card li { font-size: 8.5pt; }
+    ul { margin: 5px 0 0; padding-left: 17px; color: var(--muted); }
+    li { margin-bottom: 5px; }
+    .risk-title { color: var(--red); }
+    .safe { color: var(--green); }
+    .links {
+      margin-top: 14px;
+      padding: 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-high);
+    }
+    .links h2 { margin-bottom: 9px; font-size: 14pt; }
+    .link-row { margin: 8px 0; font-size: 9pt; }
+    .link-row strong { display: inline-block; min-width: 1.35in; }
+    a { color: var(--blue); text-decoration: none; overflow-wrap: anywhere; }
+    .pending { color: var(--copper); font-size: 8pt; }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="topline"><span class="brand">Byte<b>Forge</b></span><span>Arquitectura de datos · 01 / 04</span></div>
+    <div class="hero">
+      <div class="eyebrow">Informe técnico · caso de estudio</div>
+      <h1>Modelo de datos<br><span class="accent">y matriz CRUD</span></h1>
+      <p>Diseño de persistencia y acceso para el flujo de catálogo y pedidos de la tienda ByteForge. El esquema se basa en el modelo ER/CRUD del proyecto y en la implementación conectada a Supabase.</p>
+      <div class="stamp">EDICIÓN 24 NOV 2026&nbsp;&nbsp; / &nbsp;&nbsp;EVIDENCIA SIN DATOS PERSONALES</div>
+    </div>
+
+    <div class="section-title"><span class="num">01</span><h2>Entidades y relaciones</h2></div>
+    <p class="small">El precio de compra se conserva en cada línea; el total se calcula en servidor. La relación opcional con Auth permite pedidos de invitado sin crear una cuenta.</p>
+    <div class="model">
+      <div class="entity order">
+        <h3>pedido</h3>
+        <p><code>id</code> · <code>numero</code> · contacto · envío · estado · importes</p>
+        <div class="relation">1 pedido — 1..N líneas</div>
+      </div>
+      <div class="entity payment">
+        <h3>pago</h3>
+        <p><code>id</code> · proveedor · referencia · estado · importe</p>
+        <div class="relation">1 pedido — 0..N pagos</div>
+      </div>
+      <div class="entity product">
+        <h3>producto</h3>
+        <p><code>id</code> · especificaciones · precio · activo</p>
+        <div class="relation">1 producto — 0..N líneas</div>
+      </div>
+      <div class="entity line">
+        <h3>linea_pedido</h3>
+        <p><code>id</code> · <code>pedido_id</code> · <code>producto_id</code> · cantidad · precio congelado</p>
+        <div class="relation">Tabla de detalle / puente</div>
+      </div>
+      <div class="entity config">
+        <h3>configuracion</h3>
+        <p><code>id = true</code> · tasa_impuesto · fecha de cambio</p>
+        <div class="relation">Registro único de configuración</div>
+      </div>
+    </div>
+    <div class="note"><b>Integridad:</b> las claves foráneas de detalle y pago usan <code>ON DELETE RESTRICT</code>; los registros históricos no se eliminan físicamente. Producto y pedido se desactivan; los datos personales del pedido pueden anonimizarse por administración.</div>
+
+    <div class="section-title"><span class="num">02</span><h2>Alcance de acceso</h2></div>
+    <p>Roles de aplicación: <strong>Público</strong> (cliente invitado), <strong>ventas</strong>, <strong>despacho</strong> y <strong>admin</strong>. Los roles internos se leen de <code>app_metadata.role</code>, administrado fuera del navegador; ocultar botones en la interfaz no sustituye la autorización de base de datos.</p>
+    <div class="footer"><span>BYTEFORGE · MODELO Y SEGURIDAD</span><span>01</span></div>
+  </section>
+
+  <section class="page">
+    <div class="topline"><span class="brand">Byte<b>Forge</b></span><span>Diccionario de datos · 02 / 04</span></div>
+    <div class="eyebrow">Esquema PostgreSQL</div>
+    <h2>Campos, claves y restricciones</h2>
+    <p class="small">Campos resumidos desde las migraciones. Salvo indicación contraria, los campos requeridos son <code>NOT NULL</code>; las fechas usan zona horaria.</p>
+    <table class="entity-table">
+      <thead><tr><th>Entidad</th><th>Campos y tipos</th><th>Claves / reglas relevantes</th></tr></thead>
+      <tbody>
+        <tr><td>producto</td><td><code>id uuid</code>, <code>nombre/tipo/categoria/procesador/ram/almacenamiento/tarjeta_grafica/imagen text</code>, <code>precio numeric(12,2)</code>, <code>activo boolean</code>, <code>creado_en/modificado_en timestamptz</code>.</td><td><code>id</code> PK UUID por defecto; <code>activo=true</code>; precio ≥ 0; marcas de tiempo automáticas. Desactivación lógica en vez de borrado.</td></tr>
+        <tr><td>pedido</td><td><code>id uuid</code>, <code>numero bigint</code>, <code>cliente_id uuid</code>, nombre, correo, teléfono, dirección, ciudad y CP, método, estado, referencia, activo, subtotal/impuestos/total <code>numeric(12,2)</code>, tasa <code>numeric(5,4)</code>, fechas.</td><td><code>id</code> PK; número único identity; cliente nullable FK a <code>auth.users</code> (<code>SET NULL</code>); contacto con límites de longitud; estado y método restringidos; CP opcional; total = subtotal + impuestos.</td></tr>
+        <tr><td>linea_pedido</td><td><code>id uuid</code>, <code>pedido_id uuid</code>, <code>producto_id uuid</code>, <code>cantidad integer</code>, <code>precio_unitario/subtotal numeric(12,2)</code>, fecha.</td><td><code>id</code> PK; FK a pedido y producto con <code>RESTRICT</code>; cantidad 1–10; subtotal = precio × cantidad; único por pareja pedido/producto.</td></tr>
+        <tr><td>pago</td><td><code>id uuid</code>, <code>pedido_id uuid</code>, proveedor, referencia, estado, importe <code>numeric(12,2)</code>, <code>creado_en timestamptz</code>.</td><td><code>id</code> PK; pedido FK <code>RESTRICT</code>; referencia única; estado limitado a pendiente/confirmado/rechazado/reembolsado; importe ≥ 0.</td></tr>
+        <tr><td>configuracion</td><td><code>id boolean</code>, <code>tasa_impuesto numeric(5,4)</code>, <code>modificado_en timestamptz</code>.</td><td>PK singleton, <code>id=true</code>; tasa en [0,1]. El 16% configurado es provisional, pendiente de validación fiscal.</td></tr>
+      </tbody>
+    </table>
+    <div class="section-title"><span class="num">ER</span><h2>Cardinalidades</h2></div>
+    <div class="card">
+      <ul>
+        <li><strong>pedido 1 → 1..N linea_pedido:</strong> cada compra tiene al menos una línea; pedido y líneas se crean atómicamente.</li>
+        <li><strong>producto 1 → 0..N linea_pedido:</strong> el detalle conserva el precio aplicado en la compra.</li>
+        <li><strong>pedido 1 → 0..N pago:</strong> se preserva el historial de intentos/referencias; el pago apunta al pedido.</li>
+        <li><strong>auth.users 1 → 0..N pedidos (opcional):</strong> el checkout actual admite invitado; borrar cuenta no borra el pedido.</li>
+      </ul>
+    </div>
+    <p class="legend"><strong>Nota de implementación:</strong> no se almacenan números ni vencimientos de tarjeta. La pasarela y el webhook de tarjeta no forman parte del flujo actualmente conectado.</p>
+    <div class="footer"><span>BYTEFORGE · MODELO Y SEGURIDAD</span><span>02</span></div>
+  </section>
+
+  <section class="page">
+    <div class="topline"><span class="brand">Byte<b>Forge</b></span><span>Autorización por operación · 03 / 04</span></div>
+    <div class="eyebrow">Matriz CRUD</div>
+    <h2>¿Quién puede hacer qué?</h2>
+    <p class="small">C = crear · R = leer · U = actualizar · D = borrar. “Nadie” significa sin borrado físico; donde aplica se usa una operación lógica o transaccional.</p>
+    <table class="crud">
+      <thead><tr><th>Dato</th><th>Crear</th><th>Leer</th><th>Actualizar</th><th>Eliminar</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Producto</td>
+          <td class="limited">admin</td>
+          <td class="ok">Público: activos<br>Personal: catálogo</td>
+          <td class="limited">admin</td>
+          <td class="none">Nadie.<br>admin desactiva</td>
+        </tr>
+        <tr>
+          <td>Pedido</td>
+          <td class="limited">Público, solo RPC validada</td>
+          <td class="limited">ventas, despacho, admin</td>
+          <td class="limited">ventas/admin: datos y líneas antes del pago; ventas/admin: cancelar pendiente; despacho/admin: estados permitidos</td>
+          <td class="none">Nadie.<br>admin desactiva o anonimiza</td>
+        </tr>
+        <tr>
+          <td>Línea de pedido</td>
+          <td class="limited">RPC junto con el pedido</td>
+          <td class="limited">Personal autorizado</td>
+          <td class="limited">ventas/admin: reemplazo transaccional antes del pago</td>
+          <td class="none">Sin borrado independiente; solo reemplazo atómico autorizado</td>
+        </tr>
+        <tr>
+          <td>Pago</td>
+          <td class="limited">ventas/admin: transferencia verificada</td>
+          <td class="limited">admin</td>
+          <td class="none">Sin edición directa expuesta</td>
+          <td class="none">Nadie</td>
+        </tr>
+        <tr>
+          <td>Configuración</td>
+          <td class="limited">admin</td>
+          <td class="ok">Público</td>
+          <td class="limited">admin</td>
+          <td class="none">Nadie (singleton)</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:11px"><b>Operaciones restringidas:</b> los importes de pedido se recalculan en servidor; el público no puede insertar tablas directamente ni consultar pedidos por número. Ventas solo confirma una transferencia después de su verificación. La transición de estado está limitada por rol y estado previo.</div>
+
+    <div class="section-title"><span class="num">03</span><h2>Regla de seguridad prioritaria</h2></div>
+    <div class="rule">
+      <div class="label">Denegar por defecto los datos del pedido</div>
+      <p>El rol público nunca puede leer <code>pedidos</code>, <code>linea_pedido</code> ni <code>pago</code>. Solo personal autenticado con rol confiable puede leer pedidos; RLS aplica el control en la base de datos, no solo en la interfaz.</p>
+    </div>
+    <p>Es la prioridad porque los pedidos contienen nombre, correo, teléfono y dirección de entrega. Una URL o número de orden no debe convertirse en una credencial para acceder a datos personales.</p>
+    <div class="footer"><span>BYTEFORGE · MODELO Y SEGURIDAD</span><span>03</span></div>
+  </section>
+
+  <section class="page">
+    <div class="topline"><span class="brand">Byte<b>Forge</b></span><span>Riesgo y entrega · 04 / 04</span></div>
+    <div class="eyebrow">Evaluación breve</div>
+    <h2>Riesgo y mitigación</h2>
+    <div class="two-col">
+      <div class="card">
+        <h3 class="risk-title">Riesgo identificado</h3>
+        <p>Una política RLS demasiado amplia, o una clave privilegiada incluida en el frontend, podría permitir que terceros consulten información personal de órdenes de invitado.</p>
+      </div>
+      <div class="card">
+        <h3 class="safe">Mitigación aplicada / recomendada</h3>
+        <ul>
+          <li>RLS habilitado en las tablas; lecturas de pedidos limitadas a roles autorizados.</li>
+          <li>No conceder lectura pública de pedidos, líneas ni pagos; checkout usa una RPC de campos permitidos.</li>
+          <li>Usar solo clave publicable en el navegador; nunca incluir <code>service_role</code> o claves secretas.</li>
+          <li>Asignar roles internos solo en <code>app_metadata</code>; probar con cuentas reales antes de producción.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-title"><span class="num">04</span><h2>Evidencia segura y límites</h2></div>
+    <div class="card">
+      <ul>
+        <li>El esquema se implementa en migraciones Supabase con RLS y funciones transaccionales para el checkout.</li>
+        <li>Las verificaciones de integración y permisos están documentadas en los artefactos del proyecto; este informe omite credenciales, datos reales y secretos.</li>
+        <li>Queda pendiente validar los permisos con cuentas reales de personal; todavía no hay panel interno de órdenes.</li>
+        <li>La tasa de impuesto está en 16% como valor provisional, no como recomendación fiscal.</li>
+      </ul>
+    </div>
+
+    <div class="links">
+      <h2>Enlaces del proyecto</h2>
+      <div class="link-row"><strong>Página local</strong><a href="http://127.0.0.1:5173/">http://127.0.0.1:5173/</a></div>
+      <div class="link-row"><strong>Repositorio GitHub</strong><a href="https://github.com/AdrianLav/byteforge-computadoras">https://github.com/AdrianLav/byteforge-computadoras</a></div>
+      <p class="small" style="margin:10px 0 0">La página local solo funciona mientras el servidor de desarrollo esté en ejecución en la computadora.</p>
+    </div>
+    <div class="footer"><span>BYTEFORGE · MODELO Y SEGURIDAD</span><span>04</span></div>
+  </section>
+</body>
+</html>
